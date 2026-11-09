@@ -62,7 +62,14 @@ export default function Home() {
   async function analyze(doc: StoredDocument) {
     setAnalyzingId(doc.id);
     try {
-      const result = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ blocks: doc.blocks }) });
+      const api = process.env.NEXT_PUBLIC_AI_API_BASE_URL?.replace(/\/$/, "");
+      if (!api) {
+        const updated = { ...doc, analysis: generateLocalAnalysis(doc.blocks) };
+        await saveDocument(updated);
+        setDocs(current => current.map(d => d.id === doc.id ? updated : d));
+        return;
+      }
+      const result = await fetch(`${api}/api/analyze`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ blocks: doc.blocks }) });
       const payload = await result.json();
       const updated = { ...doc, analysis: result.ok ? payload.analysis : generateLocalAnalysis(doc.blocks) } as StoredDocument;
       await saveDocument(updated);
@@ -107,14 +114,17 @@ export default function Home() {
     if (!question || chatBusy) return;
     setChatBusy(true); setChatInput("");
     try {
-      const response = await fetch("/api/ask", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ question, blocks: activeDoc.blocks }) });
-      const payload = await response.json();
       let answer: Answer;
-      if (response.ok) answer = payload.answer;
-      else if (payload.code === "CONFIG_REQUIRED") {
+      const api = process.env.NEXT_PUBLIC_AI_API_BASE_URL?.replace(/\/$/, "");
+      if (!api) {
         const related = findRelevantBlocks(activeDoc.blocks, question, 3);
-        answer = { text: "De AI-chat is nog niet geconfigureerd. Dit zijn de best passende passages uit je document (letterlijke brontekst, geen gegenereerd antwoord):\n\n" + related.map(b => `• ${b.text.slice(0, 260)}`).join("\n\n"), sourceIds: related.map(b => b.id), mode: "local" };
-      } else throw new Error(payload.error || "Vraag beantwoorden is niet gelukt.");
+        answer = { text: "Dit is een lokale bronzoekfunctie, geen AI-antwoord. Dit zijn de best passende passages uit het document:\n\n" + related.map(b => `• ${b.text.slice(0, 260)}`).join("\n\n"), sourceIds: related.map(b => b.id), mode: "local" };
+      } else {
+        const response = await fetch(`${api}/api/ask`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ question, blocks: activeDoc.blocks }) });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Vraag beantwoorden is niet gelukt.");
+        answer = payload.answer;
+      }
       setAnswers(current => ({ ...current, [activeId]: [...(current[activeId] || []), {question, answer}] }));
     } catch (error) { setNotice(displayError(error)); }
     finally { setChatBusy(false); }
@@ -165,7 +175,7 @@ export default function Home() {
     <main className="main-panel">
       <header className="topbar">
         <div className="breadcrumb"><span>Werkruimte</span><ChevronRight size={15}/><strong>{view === "library" ? "Overzicht" : "Documentanalyse"}</strong></div>
-        <div className="top-actions"><div className="top-status"><span className="status-dot"/> AI-ready ontwerp</div><button className="icon-button" title="Over deze versie" onClick={() => setNotice("MVP: documenten lokaal opgeslagen; AI via eigen OPENAI_API_KEY. Gebruik vooralsnog geen vertrouwelijke bankgegevens.")}><HelpCircle size={18}/></button><div className="top-avatar">CF</div></div>
+        <div className="top-actions"><div className="top-status"><span className="status-dot"/> Design-preview</div><button className="icon-button" title="Over deze versie" onClick={() => setNotice("GitHub Pages-designpreview: lokale documentverwerking en bronzoekfunctie. Een externe beveiligde AI-backend is nog niet aangesloten. Gebruik geen vertrouwelijke bankgegevens.")}><HelpCircle size={18}/></button><div className="top-avatar">CF</div></div>
       </header>
 
       {notice && <div className="notice"><Info size={16}/><span>{notice}</span><button onClick={() => setNotice("")} aria-label="Sluiten"><X size={16}/></button></div>}

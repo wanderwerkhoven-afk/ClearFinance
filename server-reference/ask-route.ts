@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { aiClient, checkSourceIds, documentEvidence, model, validBlocks } from "@/lib/ai";
 import { findRelevantBlocks } from "@/lib/documents";
 
-export const runtime = "nodejs";
+// Reference implementation for a future authenticated backend, not deployed on GitHub Pages.
 
 const schema = {
   type: "object",

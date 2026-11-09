@@ -47,7 +47,7 @@ export async function importDocument(file: File): Promise<StoredDocument> {
   let pages: string[] = [];
   if (isPdf) {
     const pdfjs = await import("pdfjs-dist");
-    pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+    pdfjs.GlobalWorkerOptions.workerSrc = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/pdf.worker.min.mjs`;
     const pdf = await pdfjs.getDocument({ data: new Uint8Array(binary.slice(0)) }).promise;
     if (pdf.numPages > 150) throw new Error("Maximaal 150 pagina's per document in deze MVP.");
     for (let i = 1; i <= pdf.numPages; i++) {

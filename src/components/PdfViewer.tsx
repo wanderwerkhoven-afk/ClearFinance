@@ -37,7 +37,7 @@ export default function PdfViewer({ doc, selected, page, onPageChange }: {
       try {
         setRenderError(""); setHighlights([]);
         const pdfjs = await import("pdfjs-dist");
-        pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        pdfjs.GlobalWorkerOptions.workerSrc = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/pdf.worker.min.mjs`;
         pdf = await pdfjs.getDocument({ data: new Uint8Array(doc.binary!.slice(0)) }).promise;
         const pdfPage = await pdf.getPage(page);
         const viewport0 = pdfPage.getViewport({ scale: 1 });
