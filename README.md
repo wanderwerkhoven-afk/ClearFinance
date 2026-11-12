@@ -1,5 +1,15 @@
 # ClearFinance AI
 
+## Nieuwe onderzoeksbackend (open source, lokaal)
+
+De repository bevat nu een echte **lokale AI-onderzoeksbackend** in [backend/](backend/) met FastAPI, Ollama (standaard `qwen2.5:3b`), een kosteloze BM25-baseline en optionele SQLite FTS5-opslag. De bestaande GitHub Pages-frontend blijft een design-preview; voor een lokale AI-demo draai je de backend én frontend op je eigen computer.
+
+**Snelstart:** lees [backend/README.md](backend/README.md), installeer Ollama en het model, start `uvicorn app.main:app --host 127.0.0.1 --port 8000` vanuit `backend/`, en plaats in de repository-root een `.env.local` met `NEXT_PUBLIC_AI_API_BASE_URL=http://127.0.0.1:8000`. Daarna `npm run dev`.
+
+Voor het reproduceerbare onderzoekswerk: [research/README.md](research/README.md). Voor de team-/agenttaken: [docs/AGENT_IMPLEMENTATION_PLAN.md](docs/AGENT_IMPLEMENTATION_PLAN.md) en [GitHub Issues](https://github.com/wanderwerkhoven-afk/ClearFinance/issues).
+
+**Beperkingen:** Ollama moet lokaal geïnstalleerd en gestart zijn; er is nog geen getrainde transformer-verificator. De backend heeft nog geen authenticatie en mag niet publiek worden aangeboden. Er zijn geen echte bankgegevens of modelgewichten geüpload. Er draait geen autonome coding-agent op de achtergrond.
+
 Een cleane, interactieve **GitHub Pages-designpreview** van een AI-documentworkspace voor begrijpelijke juridische en financiële documenten. Gebouwd met Next.js, TypeScript en PDF.js.
 
 ## Wat werkt er?
