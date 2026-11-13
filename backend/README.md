@@ -48,3 +48,7 @@ PYTHONPATH=backend pytest -q backend/tests
 - SQLite-bestand `backend/data/clearfinance.sqlite3` bevat tekst van documenten die expliciet via /api/documents worden opgeslagen. De huidige UI gebruikt die opslagroute nog niet.
 - GitHub Pages blijft voorlopig alleen de publieke *design-demo*. Voor een live AI-demo gebruik je de frontend lokaal of bouw je eerst een beveiligde HTTPS-API met authenticatie.
 - Upload geen vertrouwelijke klantdocumenten.
+
+## Hierarchical Summarization V2
+
+Gebruik **POST /api/analyze/file** met een PDF of DOCX voor Docling parsing, hoofdstukstructuur, bronmetadata, hiërarchische samenvatting en BM25-RAG in één aanroep. Installeer daarvoor ook `requirements-docling.txt`. Details in [docs/ENGINE_README.md](../docs/ENGINE_README.md). Zonder een lokaal gestart Ollama-model verschijnt een expliciet gelabelde fallback, geen AI-samenvatting.
