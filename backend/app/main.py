@@ -52,6 +52,22 @@ def blocks_data(items: list[Block]) -> list[dict]:
         raise HTTPException(status_code=422,detail="Duplicated block IDs")
     return [b.model_dump() for b in items]
 
+@app.post("/api/analyze/file")
+async def analyze_uploaded_file(file: UploadFile = File(...)):
+    """Single-call local PDF/DOCX → structured blocks → hierarchical summary."""
+    name=file.filename or ""
+    if not name.lower().endswith((".pdf",".docx")):
+        raise HTTPException(status_code=415,detail="PDF or DOCX required")
+    data=await file.read(MAX_FILE_BYTES+1)
+    if len(data)>MAX_FILE_BYTES:
+        raise HTTPException(status_code=413,detail="File exceeds 20MB")
+    try:
+        blocks=await asyncio.to_thread(parse_file,data,name)
+        analysis,audit=await summarize(blocks)
+    except (ValueError,RuntimeError) as exc:
+        raise HTTPException(status_code=422,detail=str(exc)) from exc
+    return {"analysis":analysis,"audit":audit,"blocks":blocks}
+
 @app.post("/api/parse")
 async def parse_upload(file: UploadFile = File(...)):
     name=file.filename or ""
