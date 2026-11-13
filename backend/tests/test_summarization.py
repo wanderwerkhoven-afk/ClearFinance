@@ -45,7 +45,8 @@ def test_three_level_pipeline_yields_frontend_contract():
     assert audit["generation"]=="ai"
 
 def test_partial_coverage_explicit():
-    result,audit=asyncio.run(hierarchical_analyze(BLOCKS,fake_model,max_chunks=1))
+    long_blocks=[{**b,"text":b["text"]*35} for b in BLOCKS]
+    result,audit=asyncio.run(hierarchical_analyze(long_blocks,fake_model,max_chunks=1))
     assert result["limited"] is True
     assert audit["processedChunks"]==1
     assert any("niet volledig verwerkt" in w for w in audit["warnings"])
@@ -55,7 +56,7 @@ def test_no_model_does_not_fake_ai():
         raise ConnectionError("offline")
     result,audit=asyncio.run(hierarchical_analyze(BLOCKS,fail))
     assert result["mode"]=="local"
-    assert audit["generation"] if "generation" in audit else True
+    assert "Geen AI-output beschikbaar" in " ".join(audit["warnings"])
 
 def test_retrieval_returns_existing_source_ids():
     assert set(b["id"] for b in retrieval_evidence(BLOCKS)).issubset(set(b["id"] for b in BLOCKS))
