@@ -55,3 +55,26 @@ def test_no_model_marks_local_not_ai():
     assert analysis["mode"]=="local"
     assert analysis["limited"] is True
     assert audit["generation"]=="local"
+
+
+def test_many_chunks_reduce_in_batches_not_one_huge_prompt():
+    big=[]
+    for i in range(9):
+        big.append({"id":f"p{i+1}-b{i+1}","page":i+1,
+                    "section":"Financiële resultaten",
+                    "text":("De omzet steeg. " * 85).strip()})
+    prompts=[]
+    async def observer(prompt):
+        prompts.append(prompt)
+        import re
+        ids=list(dict.fromkeys(re.findall(r"p\\d+-b\\d+",prompt)))
+        if "DOCUMENT LEVEL" in prompt:
+            return {"headline":"Resultaten","introduction":"Overzicht","sections":[{"title":"Resultaten",
+                "points":[{"text":"Omzet steeg.","sourceIds":[ids[0]]}]}],"keyTerms":[]}
+        return {"points":[{"text":"Omzet steeg.","sourceIds":[ids[0]]}]}
+    analysis,audit=asyncio.run(summarize(big,observer,max_chars=1400))
+    assert audit["chunkCount"]>=9
+    assert audit["reduceGroups"]>=3
+    assert audit["complete"]
+    assert analysis["mode"]=="ai"
+    assert sum("SECTION LEVEL" in p for p in prompts)>=3
