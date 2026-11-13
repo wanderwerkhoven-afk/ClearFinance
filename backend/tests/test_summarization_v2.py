@@ -67,7 +67,7 @@ def test_many_chunks_reduce_in_batches_not_one_huge_prompt():
     async def observer(prompt):
         prompts.append(prompt)
         import re
-        ids=list(dict.fromkeys(re.findall(r"p\\d+-b\\d+",prompt)))
+        ids=list(dict.fromkeys(re.findall(r"p\d+-b\d+",prompt)))
         if "DOCUMENT LEVEL" in prompt:
             return {"headline":"Resultaten","introduction":"Overzicht","sections":[{"title":"Resultaten",
                 "points":[{"text":"Omzet steeg.","sourceIds":[ids[0]]}]}],"keyTerms":[]}
