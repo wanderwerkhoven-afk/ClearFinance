@@ -16,10 +16,20 @@ app = FastAPI(title="ClearFinance Research API", version="0.2.0")
 origins = [o.strip() for o in os.getenv("CLEARFINANCE_ORIGINS","http://localhost:3000,http://127.0.0.1:3000").split(",") if o.strip()]
 app.add_middleware(CORSMiddleware,allow_origins=origins,allow_credentials=False,allow_methods=["GET","POST","DELETE"],allow_headers=["Content-Type"])
 
+class BoundingBox(BaseModel):
+    l: float
+    t: float
+    r: float
+    b: float
+    origin: str = "BOTTOMLEFT"
+
 class Block(BaseModel):
     id: str = Field(pattern=r"^(p\d+-b\d+|demo-[a-z0-9]+)$")
     page: int = Field(ge=1, le=10000)
     text: str = Field(min_length=1,max_length=1200)
+    section: str | None = Field(default=None,max_length=100)
+    kind: str | None = Field(default=None,max_length=30)
+    bbox: BoundingBox | None = None
     @field_validator("text")
     @classmethod
     def no_whitespace_only(cls,value: str) -> str:
@@ -28,7 +38,7 @@ class Block(BaseModel):
         return value
 
 class Document(BaseModel):
-    blocks: list[Block] = Field(min_length=1,max_length=600)
+    blocks: list[Block] = Field(min_length=1,max_length=4000)
 
 class Question(Document):
     question: str = Field(min_length=3,max_length=800)
