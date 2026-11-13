@@ -71,7 +71,7 @@ export default function Home() {
       }
       const result = await fetch(`${api}/api/analyze`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ blocks: doc.blocks }) });
       const payload = await result.json();
-      const updated = { ...doc, analysis: result.ok ? payload.analysis : generateLocalAnalysis(doc.blocks) } as StoredDocument;
+      const updated = { ...doc, analysis: result.ok ? { ...payload.analysis, audit: payload.audit } : generateLocalAnalysis(doc.blocks) } as StoredDocument;
       await saveDocument(updated);
       setDocs(current => current.map(d => d.id === doc.id ? updated : d));
       if (!result.ok && payload.code !== "CONFIG_REQUIRED") setNotice(payload.error || "AI-analyse is niet beschikbaar. Er is een lokaal bronnenoverzicht getoond.");
@@ -204,7 +204,8 @@ export default function Home() {
               {analyzingId === activeId ? <div className="analysis-loading"><div className="loading-glyph"><LoaderCircle size={30} className="spin"/></div><h3>We lezen je document</h3><p>Belangrijke passages en voorwaarden worden opgezocht...</p></div> : activeDoc.analysis ? <>
                 <div className="summary-eyebrow"><span className="summary-badge"><Sparkles size={13}/> SAMENVATTING</span><span className="reading-time"><BookOpen size={14}/> 3 min leestijd</span></div>
                 <h2 className="summary-title">{activeDoc.analysis.headline}</h2><p className="summary-intro">{activeDoc.analysis.introduction}</p>
-                {activeDoc.analysis.limited && <div className="scope-warning"><Info size={16}/>Dit lange document is deels bemonsterd; niet alle passages zijn meegenomen in de samenvatting.</div>}
+                {activeDoc.analysis.audit && <div className="scope-warning"><Info size={16}/><span>Verwerking: {activeDoc.analysis.audit.processedBlocks ?? "?"} van {activeDoc.analysis.audit.totalBlocks ?? "?"} bronblokken · {activeDoc.analysis.audit.modelCalls ?? "?"} modelaanroepen · {activeDoc.analysis.audit.retrieval ?? "bronzoekfunctie"} · {activeDoc.analysis.audit.complete ? "Alle blokken verwerkt" : "Voorlopig/onvolledig resultaat"}. Een geldige bronverwijzing bewijst nog niet dat een AI-claim inhoudelijk klopt.</span></div>}
+                {activeDoc.analysis.limited && <div className="scope-warning"><Info size={16}/>De verwerking is onvolledig of een samenvattingsstap is mislukt. Controleer het originele document.</div>}
                 {activeDoc.analysis.mode === "local" && <div className="scope-warning"><Info size={16}/>Dit zijn letterlijke passages, nog geen door AI vereenvoudigde uitleg. Stel een API-sleutel in voor AI-analyse.</div>}
                 <div className="summary-divider"/>
                 {activeDoc.analysis.sections.map((section, i) => <section className="summary-section" key={`${section.title}-${i}`}><div className="section-number">0{i + 1}</div><div className="summary-section-body"><h3>{section.title}</h3><div className="summary-points">{section.points.map(point => <div className={`summary-point ${point.sourceIds.includes(selectedSourceId || "____") ? "is-selected" : ""}`} key={point.id}>

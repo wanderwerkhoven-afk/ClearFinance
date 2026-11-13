@@ -15,7 +15,20 @@ export type SummarySection = {
   points: SummaryPoint[];
 };
 
+export type SummaryAudit = {
+  method: string;
+  promptVersion?: string;
+  retrieval?: string;
+  processedBlocks?: number;
+  totalBlocks?: number;
+  modelCalls?: number;
+  complete?: boolean;
+  warnings?: string[];
+  coverageRatio?: number;
+};
+
 export type Analysis = {
+  audit?: SummaryAudit;
   headline: string;
   introduction: string;
   sections: SummarySection[];
