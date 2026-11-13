@@ -86,11 +86,11 @@ export default function Home() {
       await saveDocument(updated);
       setDocs(current => current.map(d => d.id === doc.id ? updated : d));
       if (!result.ok && payload.code !== "CONFIG_REQUIRED") setNotice(payload.error || "AI-analyse is niet beschikbaar. Er is een lokaal bronnenoverzicht getoond.");
-    } catch {
-      const updated = { ...doc, analysis: generateLocalAnalysis(doc.blocks) };
-      await saveDocument(updated);
-      setDocs(current => current.map(d => d.id === doc.id ? updated : d));
-      setNotice("Browser AI kon niet draaien. Er is alleen een lokaal bronnenoverzicht getoond; geen echte AI-samenvatting.");
+    } catch (error) {
+      // Keep existing analysis intact: a failed model load must never masquerade as
+      // a successfully generated summary or overwrite a previous good result.
+      const reason = displayError(error);
+      setNotice("AI-generatie is niet gelukt: " + reason + " Gebruik 'Genereer met Browser AI' om opnieuw te proberen.");
     } finally { setAnalyzingId(null); setBrowserStatus(""); }
   }
 
@@ -126,7 +126,13 @@ export default function Home() {
         await saveDocument(doc);
         setDocs(current => [current[0], doc, ...current.slice(1)]);
         openDoc(doc.id);
-        if (process.env.NEXT_PUBLIC_AI_API_BASE_URL) await analyze(doc);
+        // Start a real AI analysis immediately after import when browser inference is possible.
+        // On unsupported hardware, leave the document ready and explain the limitation.
+        if (process.env.NEXT_PUBLIC_AI_API_BASE_URL || browserAiSupported()) {
+          await analyze(doc);
+        } else {
+          setNotice("Document ingelezen, maar WebGPU is niet beschikbaar. Voor een echte AI-samenvatting is een WebGPU-compatibele browser en GPU nodig.");
+        }
       }
     } catch (error) { setNotice(displayError(error)); }
     finally { setUploading(false); if (fileInput.current) fileInput.current.value = ""; }
@@ -251,11 +257,11 @@ export default function Home() {
           <div className="analysis-pane"><div className="analysis-toolbar"><div className="analysis-tab"><Sparkles size={16}/> AI-samenvatting</div><div className="analysis-mode">{activeDoc.analysis?.mode === "ai" ? <><span className="dot-green"/>AI-analyse</> : activeDoc.id === "demo" ? "Interactief voorbeeld" : "Lokale bronextractie"}</div></div>
             <div className="analysis-scroll">
               {analyzingId === activeId ? <div className="analysis-loading"><div className="loading-glyph"><LoaderCircle size={30} className="spin"/></div><h3>Browser AI analyseert je document</h3><p>{browserStatus || "Model en bronpassages voorbereiden..."}</p></div> : activeDoc.analysis ? <>
-                <div className="summary-eyebrow"><span className="summary-badge"><Sparkles size={13}/> SAMENVATTING</span><span className="reading-time"><BookOpen size={14}/> 3 min leestijd</span></div>
+                <div className="summary-eyebrow"><span className="summary-badge"><Sparkles size={13}/>{activeDoc.analysis.mode === "local" ? "BRONOVERZICHT — GEEN AI" : "SAMENVATTING"}</span><span className="reading-time"><BookOpen size={14}/> 3 min leestijd</span></div>
                 <h2 className="summary-title">{activeDoc.analysis.headline}</h2><p className="summary-intro">{activeDoc.analysis.introduction}</p>
                 {activeDoc.analysis.audit && <div className="scope-warning"><Info size={16}/><span>Verwerking: {activeDoc.analysis.audit.processedBlocks ?? "?"} van {activeDoc.analysis.audit.totalBlocks ?? "?"} bronblokken · {activeDoc.analysis.audit.modelCalls ?? "?"} modelaanroepen · {activeDoc.analysis.audit.retrieval ?? "bronzoekfunctie"} · {activeDoc.analysis.audit.complete ? "Alle blokken verwerkt" : "Voorlopig/onvolledig resultaat"}. Een geldige bronverwijzing bewijst nog niet dat een AI-claim inhoudelijk klopt.</span></div>}
                 {activeDoc.analysis.limited && <div className="scope-warning"><Info size={16}/>De verwerking is onvolledig of een samenvattingsstap is mislukt. Controleer het originele document.</div>}
-                {activeDoc.analysis.mode === "local" && <div className="scope-warning"><Info size={16}/>Dit zijn letterlijke passages, nog geen door AI vereenvoudigde uitleg. Gebruik een WebGPU-compatibele browser en kies Genereer met Browser AI voor echte samenvatting.</div>}
+                {activeDoc.analysis.mode === "local" && <div className="scope-warning"><Info size={16}/>Dit is geen AI-samenvatting maar een selectie van oorspronkelijke passages. Klik bovenaan op Genereer met Browser AI om de hiërarchische pipeline uit te voeren.</div>}
                 <div className="summary-divider"/>
                 {activeDoc.analysis.sections.map((section, i) => <section className="summary-section" key={`${section.title}-${i}`}><div className="section-number">0{i + 1}</div><div className="summary-section-body"><h3>{section.title}</h3><div className="summary-points">{section.points.map(point => <div className={`summary-point ${point.sourceIds.includes(selectedSourceId || "____") ? "is-selected" : ""}`} key={point.id}>
                   <span className="point-bullet"><Check size={12}/></span><div><p>{point.text}</p><div className="source-links">{point.sourceIds.map(id => {const block = activeDoc.blocks.find(b => b.id === id); return block ? <button className={`source-link ${selectedSourceId === id ? "active" : ""}`} key={id} onClick={() => gotoSource(id)} title={`Bekijk bron: ${block.text.slice(0, 150)}`}><FileSearch size={12}/> Bron: pagina {block.page}<ArrowRight size={12}/></button> : null;})}</div></div>
