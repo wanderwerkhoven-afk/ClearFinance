@@ -92,7 +92,7 @@ export function generateLocalAnalysis(blocks: SourceBlock[]): import("./types").
   })).sort((a,b) => b.score - a.score).slice(0, 6).sort((a,b) => a.block.page - b.block.page);
   return {
     headline: "Documentoverzicht",
-    introduction: "Dit is een lokaal, letterlijk fragmentenoverzicht. Configureer een AI-sleutel voor een begrijpelijke samenvatting in gewone taal.",
+    introduction: "Dit zijn letterlijke passages uit het document, geen AI-samenvatting. Gebruik de knop Genereer met Browser AI om de hiërarchische samenvatting te starten.",
     sections: [{ title: "Mogelijk relevante passages", points: prioritized.map((v, i) => ({ id: `local-${i}`, text: v.block.text.slice(0, 340), sourceIds: [v.block.id] })) }],
     keyTerms: [], mode: "local", limited: false,
   };
