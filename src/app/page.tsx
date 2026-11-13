@@ -9,6 +9,7 @@ import {
   Sparkles, Trash2, X,
 } from "lucide-react";
 import PdfViewer from "@/components/PdfViewer";
+import { analyzeInBrowser, browserAiSupported } from "@/lib/browser-ai";
 import { demoDocument } from "@/lib/demo";
 import { findRelevantBlocks, generateLocalAnalysis, getDocuments, importDocument, removeDocument, saveDocument } from "@/lib/documents";
 import type { Answer, SourceBlock, StoredDocument } from "@/lib/types";
@@ -33,8 +34,12 @@ export default function Home() {
   const [chatBusy, setChatBusy] = useState(false);
   const [answers, setAnswers] = useState<Record<string, { question: string; answer: Answer }[]>>({});
   const [notice, setNotice] = useState("");
+  const [browserStatus, setBrowserStatus] = useState("");
+  const [browserSupported, setBrowserSupported] = useState<boolean | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const chatEnd = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setBrowserSupported(browserAiSupported()); }, []);
 
   useEffect(() => {
     getDocuments().then(saved => setDocs([demoDocument, ...saved])).catch(() => setNotice("Lokale opslag is niet beschikbaar in deze browser."));
@@ -61,10 +66,15 @@ export default function Home() {
 
   async function analyze(doc: StoredDocument) {
     setAnalyzingId(doc.id);
+    setBrowserStatus("Browser AI voorbereiden...");
     try {
       const api = process.env.NEXT_PUBLIC_AI_API_BASE_URL?.replace(/\/$/, "");
       if (!api) {
-        const updated = { ...doc, analysis: generateLocalAnalysis(doc.blocks) };
+        const analysis = await analyzeInBrowser(doc.blocks, (status, fraction) => {
+          const percentage = fraction !== null ? " (" + Math.round(fraction * 100) + "%)" : "";
+          setBrowserStatus(status + percentage);
+        });
+        const updated = { ...doc, analysis };
         await saveDocument(updated);
         setDocs(current => current.map(d => d.id === doc.id ? updated : d));
         return;
@@ -79,8 +89,8 @@ export default function Home() {
       const updated = { ...doc, analysis: generateLocalAnalysis(doc.blocks) };
       await saveDocument(updated);
       setDocs(current => current.map(d => d.id === doc.id ? updated : d));
-      setNotice("AI kon niet worden bereikt. Het lokale bronnenoverzicht is beschikbaar.");
-    } finally { setAnalyzingId(null); }
+      setNotice("Browser AI kon niet draaien. Er is alleen een lokaal bronnenoverzicht getoond; geen echte AI-samenvatting.");
+    } finally { setAnalyzingId(null); setBrowserStatus(""); }
   }
 
   async function parseWithLocalBackend(file: File, fallbackBlocks: SourceBlock[]): Promise<SourceBlock[]> {
@@ -115,7 +125,7 @@ export default function Home() {
         await saveDocument(doc);
         setDocs(current => [current[0], doc, ...current.slice(1)]);
         openDoc(doc.id);
-        await analyze(doc);
+        if (process.env.NEXT_PUBLIC_AI_API_BASE_URL) await analyze(doc);
       }
     } catch (error) { setNotice(displayError(error)); }
     finally { setUploading(false); if (fileInput.current) fileInput.current.value = ""; }
@@ -170,7 +180,7 @@ export default function Home() {
     link.click(); URL.revokeObjectURL(link.href);
   }
 
-  const canAnalyze = activeDoc.id !== "demo" && !analyzingId;
+  const canAnalyze = activeDoc.id !== "demo" && !!activeDoc.blocks.length && !analyzingId && (Boolean(process.env.NEXT_PUBLIC_AI_API_BASE_URL) || browserSupported !== false);
 
   return <div className="app-shell">
     <input ref={fileInput} className="visually-hidden" type="file" accept=".pdf,.txt,application/pdf,text/plain" multiple onChange={handleFileChange} />
@@ -190,15 +200,15 @@ export default function Home() {
       </div>
       <button className="sidebar-add" onClick={() => fileInput.current?.click()}><Plus size={17}/> Nieuw document</button>
       <div className="sidebar-bottom">
-        <div className="privacy-message"><ShieldCheck size={18}/><span>Documenten blijven lokaal in je browser. AI-verzoeken versturen geselecteerde tekst naar de ingestelde modelprovider.</span></div>
-        <div className="profile"><div className="profile-avatar">CF</div><div><strong>Mijn werkruimte</strong><span>Prototype · lokaal</span></div><MoreHorizontal size={17}/></div>
+        <div className="privacy-message"><ShieldCheck size={18}/><span>Browser AI draait op je apparaat. Alleen modelbestanden worden gedownload; zonder optionele backend blijven je documenten lokaal.</span></div>
+        <div className="profile"><div className="profile-avatar">CF</div><div><strong>Mijn werkruimte</strong><span>Browser AI · lokaal</span></div><MoreHorizontal size={17}/></div>
       </div>
     </aside>
 
     <main className="main-panel">
       <header className="topbar">
         <div className="breadcrumb"><span>Werkruimte</span><ChevronRight size={15}/><strong>{view === "library" ? "Overzicht" : "Documentanalyse"}</strong></div>
-        <div className="top-actions"><div className="top-status"><span className="status-dot"/> Design-preview</div><button className="icon-button" title="Over deze versie" onClick={() => setNotice("GitHub Pages-designpreview: lokale documentverwerking en bronzoekfunctie. Een externe beveiligde AI-backend is nog niet aangesloten. Gebruik geen vertrouwelijke bankgegevens.")}><HelpCircle size={18}/></button><div className="top-avatar">CF</div></div>
+        <div className="top-actions"><div className="top-status"><span className="status-dot"/> Browser AI · lokale inferentie</div><button className="icon-button" title="Over deze versie" onClick={() => setNotice("Browser AI draait lokaal met WebGPU en vereist een eenmalige modeldownload. Gebruik alleen fictieve of publieke testdocumenten; valideer alle financiële conclusies.")}><HelpCircle size={18}/></button><div className="top-avatar">CF</div></div>
       </header>
 
       {notice && <div className="notice"><Info size={16}/><span>{notice}</span><button onClick={() => setNotice("")} aria-label="Sluiten"><X size={16}/></button></div>}
@@ -207,7 +217,7 @@ export default function Home() {
         <div className="welcome-row"><div><div className="eyebrow">JOUW FINANCIËLE DOCUMENTEN, HELDER UITGELEGD</div><h1>Begrijp wat er écht staat<span className="accent-period">.</span></h1><p>Van complexe voorwaarden tot uitgebreide jaarverslagen. Alles wat je moet weten, in begrijpelijke taal.</p></div><div className="welcome-art" aria-hidden><div className="art-card art-back"/><div className="art-card art-front"><FileCheck2 size={25}/><span/><span/><span/></div><div className="art-spark"><Sparkles size={23}/></div></div></div>
         <div className="stat-row"><div className="stat-card"><div className="stat-icon"><FileText size={18}/></div><div><strong>{docs.length - 1}</strong><span>Mijn documenten</span></div></div><div className="stat-card"><div className="stat-icon mint"><BadgeCheck size={18}/></div><div><strong>{docs.filter(d => d.id !== "demo" && d.analysis?.mode === "ai").length}</strong><span>AI-analyses</span></div></div><div className="stat-card"><div className="stat-icon cream"><LockKeyhole size={18}/></div><div><strong>Privé</strong><span>Lokale opslag</span></div></div></div>
         <div className={`upload-zone ${dragOver ? "drag-over" : ""}`} onDrop={handleDrop} onDragOver={e => {e.preventDefault();setDragOver(true);}} onDragLeave={() => setDragOver(false)}>
-          <div className="upload-icon"><CloudUpload size={25}/></div><div className="upload-copy"><h3>Een nieuw document analyseren?</h3><p>Sleep je PDF hierheen of kies een bestand op je apparaat. Ook TXT wordt ondersteund.</p></div><button className="primary-button" onClick={() => fileInput.current?.click()} disabled={uploading}>{uploading ? <LoaderCircle className="spin" size={16}/> : <Plus size={16}/>} {uploading ? "Verwerken..." : "Document toevoegen"}</button>
+          <div className="upload-icon"><CloudUpload size={25}/></div><div className="upload-copy"><h3>Een nieuw document analyseren?</h3><p>Upload PDF of TXT en start daarna Browser AI. Het model draait lokaal op een WebGPU-compatibel apparaat.</p></div><button className="primary-button" onClick={() => fileInput.current?.click()} disabled={uploading}>{uploading ? <LoaderCircle className="spin" size={16}/> : <Plus size={16}/>} {uploading ? "Verwerken..." : "Document toevoegen"}</button>
         </div>
         <div className="section-header"><div><h2>Mijn documenten</h2><p>Al je bestanden overzichtelijk op één plek.</p></div><div className="search-field"><Search size={17}/><input placeholder="Zoek documenten..." value={query} onChange={e => setQuery(e.target.value)} aria-label="Zoek documenten"/></div></div>
         <div className="document-table"><div className="table-header"><span>DOCUMENT</span><span>GEÜPLOAD</span><span>STATUS</span><span></span></div>
@@ -218,25 +228,25 @@ export default function Home() {
             <div className="doc-actions"><button className="row-arrow" onClick={() => openDoc(doc.id)} aria-label={`${doc.name} openen`}><ArrowRight size={18}/></button>{doc.id !== "demo" && <button className="row-delete" onClick={() => void deleteDoc(doc.id)} title="Verwijderen"><Trash2 size={16}/></button>}</div>
           </div>)}
         </div>
-        <div className="dashboard-help"><Lightbulb size={18}/><p><strong>Tip:</strong> Open het voorbeelddocument om te zien hoe samenvattingen en klikbare bronverwijzingen werken.</p></div>
+        <div className="dashboard-help"><Lightbulb size={18}/><p><strong>Browser AI:</strong> {browserSupported === false ? "Deze browser ondersteunt momenteel geen WebGPU. De fictieve demo blijft beschikbaar." : "Na het uploaden kun je een AI-samenvatting genereren. Het model wordt bij de eerste analyse gedownload."}</p></div>
       </section> : <section className="workspace-content">
-        <div className="workspace-header"><div className="workspace-heading"><button className="back-button" onClick={() => setView("library")} aria-label="Terug naar documenten"><ArrowLeft size={20}/></button><div><div className="eyebrow">DOCUMENTANALYSE <span className="eyebrow-divider">/</span> {activeDoc.pageCount} PAGINA&apos;S</div><h1>{activeDoc.name}</h1></div></div><div className="workspace-actions"><button className="outline-button" onClick={() => setShowSource(v => !v)}>{showSource ? <PanelRightClose size={16}/> : <PanelRightOpen size={16}/>} <span className="hide-on-mobile">{showSource ? "Verberg bron" : "Toon bron"}</span></button><button className="outline-button" onClick={exportAnalysis} disabled={!activeDoc.analysis}><FileText size={16}/><span className="hide-on-mobile">Exporteer</span></button></div></div>
+        <div className="workspace-header"><div className="workspace-heading"><button className="back-button" onClick={() => setView("library")} aria-label="Terug naar documenten"><ArrowLeft size={20}/></button><div><div className="eyebrow">DOCUMENTANALYSE <span className="eyebrow-divider">/</span> {activeDoc.pageCount} PAGINA&apos;S</div><h1>{activeDoc.name}</h1></div></div><div className="workspace-actions"><button className="outline-button" disabled={!canAnalyze} onClick={() => void analyze(activeDoc)}><Sparkles size={16}/><span className="hide-on-mobile">{analyzingId === activeId ? "AI werkt..." : "Genereer met Browser AI"}</span></button><button className="outline-button" onClick={() => setShowSource(v => !v)}>{showSource ? <PanelRightClose size={16}/> : <PanelRightOpen size={16}/>} <span className="hide-on-mobile">{showSource ? "Verberg bron" : "Toon bron"}</span></button><button className="outline-button" onClick={exportAnalysis} disabled={!activeDoc.analysis}><FileText size={16}/><span className="hide-on-mobile">Exporteer</span></button></div></div>
         <div className={`workspace-grid ${!showSource ? "without-source" : ""}`}>
           <div className="analysis-pane"><div className="analysis-toolbar"><div className="analysis-tab"><Sparkles size={16}/> AI-samenvatting</div><div className="analysis-mode">{activeDoc.analysis?.mode === "ai" ? <><span className="dot-green"/>AI-analyse</> : activeDoc.id === "demo" ? "Interactief voorbeeld" : "Lokale bronextractie"}</div></div>
             <div className="analysis-scroll">
-              {analyzingId === activeId ? <div className="analysis-loading"><div className="loading-glyph"><LoaderCircle size={30} className="spin"/></div><h3>We lezen je document</h3><p>Belangrijke passages en voorwaarden worden opgezocht...</p></div> : activeDoc.analysis ? <>
+              {analyzingId === activeId ? <div className="analysis-loading"><div className="loading-glyph"><LoaderCircle size={30} className="spin"/></div><h3>Browser AI analyseert je document</h3><p>{browserStatus || "Model en bronpassages voorbereiden..."}</p></div> : activeDoc.analysis ? <>
                 <div className="summary-eyebrow"><span className="summary-badge"><Sparkles size={13}/> SAMENVATTING</span><span className="reading-time"><BookOpen size={14}/> 3 min leestijd</span></div>
                 <h2 className="summary-title">{activeDoc.analysis.headline}</h2><p className="summary-intro">{activeDoc.analysis.introduction}</p>
                 {activeDoc.analysis.audit && <div className="scope-warning"><Info size={16}/><span>Verwerking: {activeDoc.analysis.audit.processedBlocks ?? "?"} van {activeDoc.analysis.audit.totalBlocks ?? "?"} bronblokken · {activeDoc.analysis.audit.modelCalls ?? "?"} modelaanroepen · {activeDoc.analysis.audit.retrieval ?? "bronzoekfunctie"} · {activeDoc.analysis.audit.complete ? "Alle blokken verwerkt" : "Voorlopig/onvolledig resultaat"}. Een geldige bronverwijzing bewijst nog niet dat een AI-claim inhoudelijk klopt.</span></div>}
                 {activeDoc.analysis.limited && <div className="scope-warning"><Info size={16}/>De verwerking is onvolledig of een samenvattingsstap is mislukt. Controleer het originele document.</div>}
-                {activeDoc.analysis.mode === "local" && <div className="scope-warning"><Info size={16}/>Dit zijn letterlijke passages, nog geen door AI vereenvoudigde uitleg. Stel een API-sleutel in voor AI-analyse.</div>}
+                {activeDoc.analysis.mode === "local" && <div className="scope-warning"><Info size={16}/>Dit zijn letterlijke passages, nog geen door AI vereenvoudigde uitleg. Gebruik een WebGPU-compatibele browser en kies Genereer met Browser AI voor echte samenvatting.</div>}
                 <div className="summary-divider"/>
                 {activeDoc.analysis.sections.map((section, i) => <section className="summary-section" key={`${section.title}-${i}`}><div className="section-number">0{i + 1}</div><div className="summary-section-body"><h3>{section.title}</h3><div className="summary-points">{section.points.map(point => <div className={`summary-point ${point.sourceIds.includes(selectedSourceId || "____") ? "is-selected" : ""}`} key={point.id}>
                   <span className="point-bullet"><Check size={12}/></span><div><p>{point.text}</p><div className="source-links">{point.sourceIds.map(id => {const block = activeDoc.blocks.find(b => b.id === id); return block ? <button className={`source-link ${selectedSourceId === id ? "active" : ""}`} key={id} onClick={() => gotoSource(id)} title={`Bekijk bron: ${block.text.slice(0, 150)}`}><FileSearch size={12}/> Bron: pagina {block.page}<ArrowRight size={12}/></button> : null;})}</div></div>
                 </div>)}</div></div></section>)}
                 {activeDoc.analysis.keyTerms.length > 0 && <div className="glossary"><div className="glossary-heading"><Lightbulb size={17}/> Begrippen uitgelegd</div>{activeDoc.analysis.keyTerms.map(term => <div className="term" key={term.term}><strong>{term.term}</strong><span>{term.explanation}</span></div>)}</div>}
                 <div className="disclaimer"><ShieldCheck size={16}/><span>Deze uitleg is automatisch gegenereerd. Controleer belangrijke bedragen, voorwaarden en beslissingen altijd in het originele document.</span></div>
-              </> : <div className="analysis-empty"><FileSearch size={27}/><h3>Nog geen analyse</h3><p>Start de documentanalyse om belangrijke passages overzichtelijk te bekijken.</p><button className="primary-button" disabled={!canAnalyze} onClick={() => void analyze(activeDoc)}>Analyse starten</button></div>}
+              </> : <div className="analysis-empty"><FileSearch size={27}/><h3>Nog geen analyse</h3><p>Start Browser AI om met het lokale Qwen-model een hiërarchische samenvatting te maken.</p><button className="primary-button" disabled={!canAnalyze} onClick={() => void analyze(activeDoc)}>Genereer met Browser AI</button>{browserSupported === false && <p>WebGPU ontbreekt in deze browser. Gebruik een geschikte desktopbrowser.</p>}</div>}
             </div>
             <div className="chat-panel"><div className="chat-label"><MessageCircle size={17}/><span>Stel een vraag over dit document</span></div>
               {currentAnswers.length > 0 && <div className="chat-history">{currentAnswers.map((entry, i) => <div className="chat-exchange" key={i}><div className="chat-question">{entry.question}</div><div className="chat-answer"><Sparkles size={15}/><div><p>{entry.answer.text}</p><div className="source-links">{entry.answer.sourceIds.map(id => {const block = activeDoc.blocks.find(b => b.id === id); return block ? <button key={id} className="source-link" onClick={() => gotoSource(id)}>Bron p. {block.page}<ArrowRight size={11}/></button> : null;})}</div></div></div></div>)}<div ref={chatEnd}/></div>}
