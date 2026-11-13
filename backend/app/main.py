@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from .core import analyze, answer
 from .summarization import hierarchical_analyze
+from .summarization_v2 import summarize
 from . import storage
 
 app = FastAPI(title="ClearFinance Research API", version="0.2.0")
@@ -45,12 +46,17 @@ def health():
 
 @app.post("/api/analyze")
 async def analyze_route(document: Document):
+    analysis, audit = await summarize(blocks_data(document.blocks))
+    return {"analysis":analysis,"audit":audit}
+
+@app.post("/api/analyze/v1")
+async def v1_route(document: Document):
     analysis, audit = await hierarchical_analyze(blocks_data(document.blocks))
     return {"analysis":analysis,"audit":audit}
 
 @app.post("/api/analyze/hierarchical")
 async def hierarchical_route(document: Document):
-    analysis, audit = await hierarchical_analyze(blocks_data(document.blocks))
+    analysis, audit = await summarize(blocks_data(document.blocks))
     return {"analysis":analysis,"audit":audit}
 
 @app.post("/api/analyze/flat")
