@@ -63,8 +63,9 @@ function retrieve(blocks,query,k=3) {
 }
 async function analyze(id,rawBlocks) {
   if(!Array.isArray(rawBlocks)||!rawBlocks.length)throw Error("Upload eerst een PDF met tekstlaag of een TXT-bestand.");
-  const blocks=rawBlocks.filter(b=>typeof b?.text==="string"&&b.text.trim()&&typeof b?.id==="string"&&Number.isInteger(b.page)).slice(0,600);
-  const all=chunks(blocks),selected=all.slice(0,12),truncated=all.length>selected.length;
+  const eligible=rawBlocks.filter(b=>typeof b?.text==="string"&&b.text.trim()&&typeof b?.id==="string"&&Number.isInteger(b.page));
+  const blocks=eligible.slice(0,600);
+  const all=chunks(blocks),selected=all.slice(0,12),truncated=all.length>selected.length||eligible.length>600;
   const llm=await engine(id);
   const mapped=[];let errors=0,calls=0;
   for(let i=0;i<selected.length;i++) {
@@ -113,7 +114,7 @@ async function analyze(id,rawBlocks) {
     errors++;
     analysis={headline:"Voorlopig overzicht per sectie",introduction:"De laatste synthesestap is niet afgerond. Controleer de bronnen.",sections:sections.slice(0,4).map((ps,i)=>({title:"Sectie "+(i+1),points:ps.map((p,j)=>({...p,id:"partial-"+i+"-"+j}))})),keyTerms:[],mode:"ai",limited:true};
   }
-  analysis.audit={method:"browser-hierarchical-rag",promptVersion:"browser-v1",retrieval:"lexical",totalBlocks:blocks.length,processedBlocks:selected.flat().length,modelCalls:calls,complete:!truncated&&errors===0,warnings:[...(truncated?["Niet alle chunks verwerkt: browserdemo-limiet."]:[]),...(errors?[errors+" modelstappen leverden geen volledig resultaat."]:[]),"Bron-ID-validatie bewijst niet dat een claim feitelijk klopt."],model:MODEL};
+  analysis.audit={method:"browser-hierarchical-rag",promptVersion:"browser-v1",retrieval:"lexical",totalBlocks:eligible.length,processedBlocks:selected.flat().length,modelCalls:calls,complete:!truncated&&errors===0,warnings:[...(truncated?["Niet alle documentpassages zijn verwerkt: browserdemo-limiet."]:[]),...(errors?[errors+" modelstappen leverden geen volledig resultaat."]:[]),"Bron-ID-validatie bewijst niet dat een claim feitelijk klopt."],model:MODEL};
   notify(id,"Samenvatting gereed",1);
   return analysis;
 }

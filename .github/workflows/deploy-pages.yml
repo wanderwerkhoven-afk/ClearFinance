@@ -24,6 +24,8 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - run: node --check public/browser-ai.worker.mjs
+      - run: npm run typecheck
       - run: npm run build
         env:
           GITHUB_PAGES: 'true'
