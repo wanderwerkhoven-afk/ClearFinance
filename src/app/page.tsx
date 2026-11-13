@@ -9,7 +9,7 @@ import {
   Sparkles, Trash2, X,
 } from "lucide-react";
 import PdfViewer from "@/components/PdfViewer";
-import { analyzeInBrowser, browserAiSupported } from "@/lib/browser-ai";
+import { analyzeInBrowser, browserAiSupported, clearBrowserModelCache } from "@/lib/browser-ai";
 import { demoDocument } from "@/lib/demo";
 import { findRelevantBlocks, generateLocalAnalysis, getDocuments, importDocument, removeDocument, saveDocument } from "@/lib/documents";
 import type { Answer, SourceBlock, StoredDocument } from "@/lib/types";
@@ -36,6 +36,7 @@ export default function Home() {
   const [notice, setNotice] = useState("");
   const [browserStatus, setBrowserStatus] = useState("");
   const [browserSupported, setBrowserSupported] = useState<boolean | null>(null);
+  const [clearingCache, setClearingCache] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const chatEnd = useRef<HTMLDivElement>(null);
 
@@ -180,6 +181,21 @@ export default function Home() {
     link.click(); URL.revokeObjectURL(link.href);
   }
 
+  async function clearAiDownloads() {
+    if (clearingCache || analyzingId) return;
+    if (!window.confirm("Het gedownloade Qwen AI-model verwijderen uit de browsercache? Je documenten en samenvattingen blijven bewaard. Bij de volgende analyse moet het model opnieuw worden gedownload.")) return;
+    setClearingCache(true);
+    setNotice("AI-modelcache wordt opgeruimd...");
+    try {
+      await clearBrowserModelCache(status => setNotice(status));
+      setNotice("AI-downloads gewist. Je documenten en samenvattingen zijn behouden. Het model wordt bij de volgende analyse opnieuw gedownload.");
+    } catch (error) {
+      setNotice("Modelcache wissen is niet gelukt: " + displayError(error));
+    } finally {
+      setClearingCache(false);
+    }
+  }
+
   const canAnalyze = activeDoc.id !== "demo" && !!activeDoc.blocks.length && !analyzingId && (Boolean(process.env.NEXT_PUBLIC_AI_API_BASE_URL) || browserSupported !== false);
 
   return <div className="app-shell">
@@ -208,7 +224,7 @@ export default function Home() {
     <main className="main-panel">
       <header className="topbar">
         <div className="breadcrumb"><span>Werkruimte</span><ChevronRight size={15}/><strong>{view === "library" ? "Overzicht" : "Documentanalyse"}</strong></div>
-        <div className="top-actions"><div className="top-status"><span className="status-dot"/> Browser AI · lokale inferentie</div><button className="icon-button" title="Over deze versie" onClick={() => setNotice("Browser AI draait lokaal met WebGPU en vereist een eenmalige modeldownload. Gebruik alleen fictieve of publieke testdocumenten; valideer alle financiële conclusies.")}><HelpCircle size={18}/></button><div className="top-avatar">CF</div></div>
+        <div className="top-actions"><button className="outline-button" disabled={clearingCache || !!analyzingId} onClick={() => void clearAiDownloads()} title="Alleen het lokale Qwen-model wissen; documenten blijven bewaard"><Trash2 size={15}/><span className="hide-on-mobile">{clearingCache ? "Wissen..." : "AI-downloads wissen"}</span></button><div className="top-status"><span className="status-dot"/> Browser AI · lokale inferentie</div><button className="icon-button" title="Over deze versie" onClick={() => setNotice("Browser AI draait lokaal met WebGPU en vereist een eenmalige modeldownload. Gebruik alleen fictieve of publieke testdocumenten; valideer alle financiële conclusies.")}><HelpCircle size={18}/></button><div className="top-avatar">CF</div></div>
       </header>
 
       {notice && <div className="notice"><Info size={16}/><span>{notice}</span><button onClick={() => setNotice("")} aria-label="Sluiten"><X size={16}/></button></div>}

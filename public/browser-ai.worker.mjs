@@ -118,9 +118,36 @@ async function analyze(id,rawBlocks) {
   notify(id,"Samenvatting gereed",1);
   return analysis;
 }
+async function clearModelCache(id) {
+  notify(id,"AI-model uit GPU-geheugen verwijderen",null);
+  const active=enginePromise;
+  enginePromise=null;
+  if(active) {
+    try {
+      const instance=await active;
+      if(instance && typeof instance.unload==="function") await instance.unload();
+    } catch {} // A failed or interrupted previous download may leave cache entries.
+  }
+  notify(id,"Browsermodel uit modelcache verwijderen",null);
+  const lib=await import(CDN);
+  if(typeof lib.deleteModelAllInfoInCache!=="function")
+    throw Error("Deze WebLLM-versie ondersteunt automatisch modelcache wissen niet.");
+  await lib.deleteModelAllInfoInCache(MODEL,lib.prebuiltAppConfig);
+  return true;
+}
 self.onmessage=async e=>{
   const {type,id,blocks}=e.data||{};
-  if(type!=="analyze"||typeof id!=="number")return;
+  if(typeof id!=="number")return;
+  if(type==="clear-cache") {
+    try {
+      await clearModelCache(id);
+      self.postMessage({type:"cache-cleared",id});
+    } catch(error) {
+      self.postMessage({type:"error",id,message:error instanceof Error?error.message:String(error)});
+    }
+    return;
+  }
+  if(type!=="analyze")return;
   try{self.postMessage({type:"result",id,analysis:await analyze(id,blocks)});}
   catch(error){self.postMessage({type:"error",id,message:error instanceof Error?error.message:String(error)});}
 };

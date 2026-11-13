@@ -32,3 +32,28 @@ export function analyzeInBrowser(blocks: SourceBlock[], onProgress: (text: strin
     current.postMessage({type:"analyze",id,blocks});
   });
 }
+
+/** Deletes only the ClearFinance Qwen model weights, never IndexedDB documents. */
+export function clearBrowserModelCache(onProgress: (text: string)=>void): Promise<void> {
+  if (running) return Promise.reject(new Error("Wacht totdat de lopende samenvatting gereed is."));
+  if (typeof Worker === "undefined") return Promise.reject(new Error("Deze browser ondersteunt geen Web Workers."));
+  if (!worker) worker = new Worker((process.env.NEXT_PUBLIC_BASE_PATH ?? "") + "/browser-ai.worker.mjs", {type:"module"});
+  running = true;
+  const current=worker;
+  const id=++request;
+  return new Promise<void>((resolve,reject)=>{
+    const cleanup=()=>{current.removeEventListener("message",onMessage);current.removeEventListener("error",onError);running=false;};
+    const onError=(event:ErrorEvent)=>{cleanup();cancelBrowserAnalysis();reject(new Error(event.message||"Kan de modelcache niet verwijderen."));};
+    const onMessage=(event:MessageEvent)=>{
+      const info=event.data;
+      if(info?.id!==id)return;
+      if(info.type==="progress"){onProgress(String(info.text||"Modelcache opruimen"));return;}
+      cleanup();
+      if(info.type==="cache-cleared") {cancelBrowserAnalysis();resolve();}
+      else reject(new Error(String(info.message||"De modelcache kon niet worden gewist.")));
+    };
+    current.addEventListener("message",onMessage);
+    current.addEventListener("error",onError);
+    current.postMessage({type:"clear-cache",id});
+  });
+}
