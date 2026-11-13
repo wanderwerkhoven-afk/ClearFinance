@@ -29,8 +29,9 @@ def fake_model(prompt):
     return run()
 
 def test_preserve_order_and_page_boundaries():
-    chunks=make_chunks(BLOCKS, max_chars=1200)
-    assert [b["id"] for c in chunks for b in c.blocks]==[b["id"] for b in BLOCKS]
+    long_blocks=[{**b,"text":b["text"]*12} for b in BLOCKS]
+    chunks=make_chunks(long_blocks, max_chars=1200)
+    assert [b["id"] for c in chunks for b in c.blocks]==[b["id"] for b in long_blocks]
     assert len(chunks)>1
 
 def test_unsupported_ids_removed():
