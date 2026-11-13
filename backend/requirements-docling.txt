@@ -1,0 +1,3 @@
+-r requirements.txt
+# Optional, substantially heavier local CPU/GPU dependencies for OCR and layout
+docling>=2.50,<3

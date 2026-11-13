@@ -2,13 +2,15 @@
 from __future__ import annotations
 import os
 import re
-from fastapi import FastAPI, HTTPException
+import asyncio
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from .core import analyze, answer
 from .summarization import hierarchical_analyze
 from .summarization_v2 import summarize
 from . import storage
+from .parsing import parse_file, MAX_FILE_BYTES
 
 app = FastAPI(title="ClearFinance Research API", version="0.2.0")
 origins = [o.strip() for o in os.getenv("CLEARFINANCE_ORIGINS","http://localhost:3000,http://127.0.0.1:3000").split(",") if o.strip()]
@@ -39,6 +41,20 @@ def blocks_data(items: list[Block]) -> list[dict]:
     if len(set(ids)) != len(ids):
         raise HTTPException(status_code=422,detail="Duplicated block IDs")
     return [b.model_dump() for b in items]
+
+@app.post("/api/parse")
+async def parse_upload(file: UploadFile = File(...)):
+    name=file.filename or ""
+    if not name.lower().endswith((".pdf",".docx")):
+        raise HTTPException(status_code=415,detail="PDF or DOCX required")
+    data=await file.read(MAX_FILE_BYTES+1)
+    if len(data)>MAX_FILE_BYTES:
+        raise HTTPException(status_code=413,detail="File exceeds 20MB")
+    try:
+        blocks=await asyncio.to_thread(parse_file,data,name)
+    except (ValueError,RuntimeError) as exc:
+        raise HTTPException(status_code=422,detail=str(exc)) from exc
+    return {"blocks":blocks,"count":len(blocks)}
 
 @app.get("/api/health")
 def health():
