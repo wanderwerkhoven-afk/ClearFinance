@@ -12,10 +12,11 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable
-from .core import checked_ids, evidence, local_summary, ollama_json, rank_bm25, sanitize_analysis
+from .core import checked_ids, evidence, local_summary, ollama_json, sanitize_analysis
+from .retrieval import rank as retrieve_rank, DEFAULT_MODE
 
 JSONModel = Callable[[str], Awaitable[dict]]
-VERSION = "hierarchical-v2.0"
+VERSION = "hierarchical-v2.1"
 CHARS_PER_CHUNK = 4200
 MAX_MODEL_CALLS = int(os.getenv("CLEARFINANCE_MAX_MODEL_CALLS", "200"))
 TOPICS = {
@@ -115,7 +116,7 @@ class CallBudget:
             raise
 
 def retrieve(blocks: list[dict], query: str, k: int=5) -> list[dict]:
-    return rank_bm25(blocks,query,k)
+    return retrieve_rank(blocks,query,k,mode=DEFAULT_MODE)[0]
 
 def source_doc_hash(blocks: list[dict]) -> str:
     payload=json.dumps([(b["id"],b["page"],b["text"]) for b in blocks],ensure_ascii=False)
@@ -149,7 +150,7 @@ async def summarize(
         "documentFingerprint":source_doc_hash(blocks),
         "chunkCount":len(chunks),"processedChunks":0,
         "totalBlocks":len(blocks),"processedBlocks":0,
-        "retrieval":"BM25","modelCalls":0,
+        "retrieval":DEFAULT_MODE,"modelCalls":0,
         "warnings":[],"sectionCount":0,
     }
     chunks_by_section: dict[str,list[dict]]=defaultdict(list)
