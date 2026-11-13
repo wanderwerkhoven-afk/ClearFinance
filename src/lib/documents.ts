@@ -68,7 +68,7 @@ export async function importDocument(file: File): Promise<StoredDocument> {
     pages = [new TextDecoder().decode(binary)];
   }
   const blocks = blockify(pages);
-  if (!blocks.length) throw new Error("Geen selecteerbare tekst gevonden. Gescande PDF's vereisen eerst OCR.");
+  if (!blocks.length && !process.env.NEXT_PUBLIC_AI_API_BASE_URL) throw new Error("Geen selecteerbare tekst gevonden. Gescande PDF\x27s vereisen OCR via een lokale backend.");
   return {
     id: crypto.randomUUID(), name, size: file.size, type: isPdf ? "pdf" : "txt",
     createdAt: Date.now(), pageCount: pages.length, blocks, binary: isPdf ? binary : undefined,

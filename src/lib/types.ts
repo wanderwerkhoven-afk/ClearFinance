@@ -2,6 +2,9 @@ export type SourceBlock = {
   id: string;
   page: number;
   text: string;
+  section?: string | null;
+  kind?: string | null;
+  bbox?: { l: number; t: number; r: number; b: number; origin: string } | null;
 };
 
 export type SummaryPoint = {

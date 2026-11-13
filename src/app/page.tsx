@@ -83,12 +83,35 @@ export default function Home() {
     } finally { setAnalyzingId(null); }
   }
 
+  async function parseWithLocalBackend(file: File, fallbackBlocks: SourceBlock[]): Promise<SourceBlock[]> {
+    const api = process.env.NEXT_PUBLIC_AI_API_BASE_URL?.replace(/\/$/, "");
+    if (!api || !file.name.toLowerCase().endsWith(".pdf")) return fallbackBlocks;
+    const form = new FormData();
+    form.append("file", file);
+    try {
+      const response = await fetch(api + "/api/parse", { method: "POST", body: form });
+      if (!response.ok) throw new Error("Docling-parser niet beschikbaar.");
+      const payload: {blocks?: SourceBlock[]} = await response.json();
+      if (!Array.isArray(payload.blocks) || !payload.blocks.length || !payload.blocks.every(
+        b => typeof b.id === "string" && Number.isInteger(b.page) &&
+             b.page > 0 && typeof b.text === "string" && b.text.length > 0
+      )) throw new Error("Onjuiste brondata van de documentparser.");
+      return payload.blocks;
+    } catch {
+      if (!fallbackBlocks.length) throw new Error("Document bevat geen selecteerbare tekst en Docling/OCR is niet beschikbaar.");
+      setNotice("Docling is niet bereikbaar. PDF.js-tekstextractie is als fallback gebruikt.");
+      return fallbackBlocks;
+    }
+  }
+
   async function importFiles(files: FileList | File[]) {
     if (!files.length) return;
     setUploading(true); setNotice("");
     try {
       for (const file of Array.from(files).slice(0, 8)) {
-        const doc = await importDocument(file);
+        const imported = await importDocument(file);
+        const blocks = await parseWithLocalBackend(file, imported.blocks);
+        const doc = { ...imported, blocks };
         await saveDocument(doc);
         setDocs(current => [current[0], doc, ...current.slice(1)]);
         openDoc(doc.id);
