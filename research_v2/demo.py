@@ -11,7 +11,7 @@ from .pipeline import ExtractiveMerger, OllamaMerger, run
 from .metrics import evaluate,rouge_n,rouge_l
 from .eda import describe
 
-def inject_known_fault(result:dict,old="120",new="125") -> tuple[dict,dict]:
+def inject_known_fault(result:dict,old="50",new="55") -> tuple[dict,dict]:
     """Modify exactly one claim AFTER a merge; no source or earlier layers changed."""
     altered=copy.deepcopy(result)
     for layer in altered["layers"][1:]:
@@ -25,9 +25,9 @@ def inject_known_fault(result:dict,old="120",new="125") -> tuple[dict,dict]:
                                 "original":before,"mutated":claim["text"],
                                 "kind":"wrong_number","expected":"numeric_review",
                                 "note":"Only the selected layer was altered. Subsequent layers are unchanged; no propagation is claimed."}
-    raise ValueError("No injectable claim at a merge layer; use a fixture containing 120 in a retained claim")
+    raise ValueError("No injectable claim at a merge layer; choose a value present in the merged claims")
 
-def build_demo(source_path:str,mode="extractive",model="qwen2.5:7b",fan_in=3,old="120",new="125"):
+def build_demo(source_path:str,mode="extractive",model="qwen2.5:7b",fan_in=3,old="50",new="55"):
     source=load_document(source_path)
     merger=ExtractiveMerger() if mode=="extractive" else OllamaMerger(model=model)
     baseline=run(source,merger,fan_in=fan_in)
@@ -111,8 +111,8 @@ def main():
     p.add_argument("--out",default="research_v2/output/demo")
     p.add_argument("--mode",choices=["extractive","ollama"],default="extractive")
     p.add_argument("--model",default="qwen2.5:7b")
-    p.add_argument("--old",default="120")
-    p.add_argument("--new",default="125")
+    p.add_argument("--old",default="50")
+    p.add_argument("--new",default="55")
     args=p.parse_args()
     out=Path(args.out);out.mkdir(parents=True,exist_ok=True)
     result=build_demo(args.input,args.mode,args.model,old=args.old,new=args.new)

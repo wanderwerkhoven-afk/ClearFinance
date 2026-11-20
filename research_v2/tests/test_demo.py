@@ -11,7 +11,7 @@ def test_complete_demo_detects_changed_number():
     assert result["comparison"]["numeric_before"]=="pass"
     assert result["comparison"]["numeric_after"]=="review"
     assert 0<result["comparison"]["rouge1"]<1
-    assert "125" in render_html(result)
+    assert "55" in render_html(result)
     assert "p.1:" in render_html(result)
 
 def test_demo_does_not_mutate_original_source():

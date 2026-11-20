@@ -17,10 +17,10 @@ Open daarna lokaal `research_v2/output/demo/index.html`. De run produceert ook `
 ## Eigen PDF verwerken
 
 ```bash
-python -m research_v2.demo --input pad/naar/jaarverslag.pdf --old 120 --new 125
+python -m research_v2.demo --input pad/naar/jaarverslag.pdf --old 50 --new 55
 ```
 
-Dit kan alleen als de tussenlaag daadwerkelijk een claim met het getal `120` bevat. Als dat niet zo is, volgt een expliciete fout in plaats van een kunstmatige succesvolle meting. De parser gebruikt lokaal PyMuPDF en bewaart paginanummers en tekstblokken. Complexe financiële tabellen worden nog **niet betrouwbaar als gestructureerde cellen** geparseerd. OCR ontbreekt.
+Dit kan alleen als de tussenlaag daadwerkelijk een claim met het getal `50` bevat. Als dat niet zo is, volgt een expliciete fout in plaats van een kunstmatige succesvolle meting. De parser gebruikt lokaal PyMuPDF en bewaart paginanummers en tekstblokken. Complexe financiële tabellen worden nog **niet betrouwbaar als gestructureerde cellen** geparseerd. OCR ontbreekt.
 
 Alternatief voor alleen tussenlagen zonder foutinjectie:
 
