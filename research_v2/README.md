@@ -46,3 +46,9 @@ Het model draait uitsluitend op localhost; geen externe AI-API. Dit vereist een 
 - Hierarchical merging is in deze baseline selecteren van bronclaims, geen LLM-synthese. De daadwerkelijke NLP-pipeline moet later met een lokaal model worden gevalideerd.
 
 De oude website op `main` blijft intact. Deze code staat op de branch `research-rebuild`. De formele Tech Methods-repository hoort volgens de projectvoorwaarden op GitLab; deze GitHub-branch moet daarvoor gespiegeld of gemigreerd worden.
+
+## Gecontroleerde demo-output op GitHub
+
+De GitHub Actions workflow draait alle tests en voert de demonstratie daadwerkelijk uit. In de run `Research rebuild validation` staat onder **Artifacts** het bestand `clearfinance-evaluation-demo`: hierin zitten `index.html` (interactieve browserweergave zonder AI) en `run.json` (traceerbare data). Download de ZIP, pak hem uit en open `index.html` lokaal. De gegenereerde HTML is een statisch verslag met uitklapbare codevrije visuele secties, niet de huidige GitHub Pages-app.
+
+De Ollama-contracttests gebruiken een gesimuleerde lokale HTTP-server, niet een echt geladen Qwen-model. Dit valideert de API-aanroep, seed, tokens en brontoewijzing maar **niet** de kwaliteit van de AI-uitvoer.
