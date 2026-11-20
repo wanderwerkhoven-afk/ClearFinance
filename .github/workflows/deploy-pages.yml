@@ -27,6 +27,15 @@ jobs:
       - run: node --check public/browser-ai.worker.mjs
       - run: npm run typecheck
       - run: npm run build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r research_v2/requirements.txt
+      - run: python -m pytest -q research_v2/tests
+      - run: python -m research_v2.demo --out /tmp/clearfinance-research-report
+      - run: |
+          mkdir -p out/research
+          cp /tmp/clearfinance-research-report/run.json out/research/run.json
         env:
           GITHUB_PAGES: 'true'
           NEXT_PUBLIC_BASE_PATH: '/ClearFinance'

@@ -1,0 +1,9 @@
+[
+  {"id":"p1-b1","page":1,"section":"Resultaten","kind":"text","text":"De omzet bedroeg 120 miljoen euro in 2025."},
+  {"id":"p1-b2","page":1,"section":"Resultaten","kind":"text","text":"De operationele kosten stegen door hogere personeelskosten."},
+  {"id":"p2-b3","page":2,"section":"Financiering","kind":"table","text":"Jaar | Schuld (mln euro): 2025 | 50; 2024 | 45."},
+  {"id":"p2-b4","page":2,"section":"Financiering","kind":"text","text":"De nettoschuld bedraagt 50 miljoen euro per einde 2025."},
+  {"id":"p3-b5","page":3,"section":"Risico's","kind":"text","text":"Het renterisico kan leiden tot hogere financieringslasten."},
+  {"id":"p3-b6","page":3,"section":"Risico's","kind":"text","text":"Bij tegenvallende kasstromen is herfinanciering mogelijk nodig."},
+  {"id":"p4-b7","page":4,"section":"Vooruitzichten","kind":"text","text":"Voor 2026 verwacht de onderneming beperkte omzetgroei, onder voorbehoud van marktomstandigheden."}
+]

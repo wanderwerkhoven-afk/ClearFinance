@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#102d3b">
+<title>ClearFinance Research · Evaluatie per laag</title>
+<style>
+:root{--navy:#0d2939;--ink:#162e3a;--muted:#71848d;--teal:#178f83;--blue:#3176e4;--line:#dce7e8;--canvas:#f4f7f8;--amber:#b86b17;--red:#bd4f3f;--green:#178165}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--canvas);font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink)}
+.top{background:#fff;border-bottom:1px solid var(--line)}.topin{max-width:1280px;padding:17px 26px;margin:auto;display:flex;gap:20px;align-items:center;justify-content:space-between}.brand{font-weight:800;font-size:18px;letter-spacing:-.6px}.brand span{color:var(--teal)}a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}.topnav{display:flex;gap:15px;font-size:13px;flex-wrap:wrap}
+.hero{background:linear-gradient(125deg,#102d3b,#153f49);color:white}.heroin{max-width:1280px;margin:auto;padding:43px 26px 40px}.eyebrow{text-transform:uppercase;letter-spacing:2px;color:#8ee0d0;font-size:11px;font-weight:750}.hero h1{font-size:clamp(28px,3.1vw,43px);line-height:1.13;max-width:720px;margin:12px 0;letter-spacing:-1.3px}.hero p{max-width:820px;color:#c9dce1;margin:12px 0}.hero .meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}.tag{border:1px solid #557780;background:#224755;color:#e8f4f5;padding:5px 11px;border-radius:99px;font-size:12px}
+main{max-width:1280px;margin:auto;padding:24px 26px 65px}.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.fact,.panel{background:#fff;border:1px solid var(--line);border-radius:14px}.fact{padding:20px}.fact b{display:block;font-size:29px;line-height:1.2;letter-spacing:-1px;margin-top:5px}.fact small{color:var(--muted);font-size:12px}.label{font-size:12px;font-weight:700;color:#6b808a;text-transform:uppercase;letter-spacing:.8px}
+.mainGrid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(290px,1fr);gap:16px;margin-top:16px}.panel{padding:21px;min-width:0}.panel h2{margin:0 0 7px;letter-spacing:-.45px;font-size:19px}.sub{font-size:13px;color:var(--muted);margin-top:0}.controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:16px 0}
+.segment{background:#eef3f4;border-radius:10px;padding:4px;display:inline-flex;gap:3px;flex-wrap:wrap}
+button{font:inherit;cursor:pointer}button.pill{border:0;background:transparent;padding:8px 13px;border-radius:8px;color:#516a73;font-size:13px;font-weight:650}button.pill[aria-pressed=true]{background:white;color:#164858;box-shadow:0 1px 6px #173b4a17}
+button:focus-visible,a:focus-visible{outline:3px solid #80bbe7;outline-offset:2px}.claim{border-top:1px solid var(--line);padding:13px 0;display:block}.claim:first-child{border-top:0}.claim.isActive{background:#f0f8f7;margin:0 -10px;padding:13px 10px;border-radius:8px}.claimHead{display:flex;gap:8px;align-items:center;justify-content:space-between}.claim p{margin:7px 0;overflow-wrap:anywhere}.id{color:#7b9099;font-size:12px;font-weight:650}.mini{border:1px solid #cddedf;padding:5px 9px;background:#fff;border-radius:8px;font-size:12px;color:#246377}.status{font-size:11px;border-radius:20px;padding:3px 9px;background:#edf5f3;color:#267865;white-space:nowrap}.status.fail{color:#a64837;background:#fff0e8}.status.unknown{color:#8a6c39;background:#fff6df}
+.selected{border-left:3px solid var(--teal);padding:10px 12px;background:#f2f9f8;border-radius:0 9px 9px 0;font-size:13px}.selected strong{display:block;margin-bottom:5px}.selected p{margin:0 0 8px}.selected .src{color:#5b7078;font-size:12px;border-top:1px solid #d7e9e5;padding-top:8px;margin-top:9px}
+.metricRow{padding:12px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:14px}.metricRow b{font-variant-numeric:tabular-nums}.metricRow span{color:#61757e}.metricRow:last-child{border:0}
+.warning{background:#fff7e9;border:1px solid #f2dfb8;border-radius:10px;padding:12px 14px;color:#7d571e;font-size:13px}
+.flow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:13px 0}.stage{border:1px solid #d5e3e5;border-radius:8px;background:#f6fbfb;padding:8px 11px;font-size:12px;font-weight:650}.arrow{color:#8fa3a8}.skeleton{min-height:180px;display:grid;place-items:center;color:var(--muted)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.smallText{font-size:13px;color:#637680}.err{color:#a34738}.ok{color:#237c64}.foot{padding:20px 26px;font-size:12px;text-align:center;color:#82929b}
+@media(max-width:850px){.facts{grid-template-columns:repeat(2,1fr)}.mainGrid,.two{grid-template-columns:1fr}.topin{align-items:flex-start;flex-direction:column;gap:8px}}
+@media(max-width:520px){.facts{grid-template-columns:1fr 1fr;gap:8px}.fact{padding:13px}.fact b{font-size:22px}main{padding:15px 12px 45px}.panel{padding:15px}.heroin{padding:30px 17px}.topin{padding:14px}}
+</style>
+</head>
+<body>
+<div class="top"><div class="topin"><div class="brand">Clear<span>Finance</span> <small style="font-size:11px;font-weight:600;color:#879aa1">/ Research</small></div>
+<nav class="topnav"><a href="/ClearFinance/">← Documentworkspace</a><a href="https://github.com/wanderwerkhoven-afk/ClearFinance/tree/research-rebuild" target="_blank" rel="noopener">Onderzoekscode</a><a href="./run.json" download="clearfinance-research-result.json">Download run-data</a></nav></div></div>
+<section class="hero"><div class="heroin"><div class="eyebrow">Case B · Automatic evaluation of AI-generated summaries</div><h1>Waar gaat informatie verloren tijdens het samenvatten?</h1><p>Een transparante demonstratie van <b>hierarchical merging</b> als testinstrument. Bekijk per laag de claims, bronverwijzingen en een gecontroleerd geïnjecteerde cijferfout.</p><div class="meta"><span class="tag">Uitgevoerde Python-baseline</span><span class="tag">Geen GPU of API-key vereist</span><span class="tag">Synthetische onderzoeksdata</span></div></div></section>
+<main>
+<section class="facts" aria-label="Onderzoeksresultaten">
+<div class="fact"><div class="label">Bronpassages</div><b id="countSources">—</b><small>Met herleidbare bron-ID's</small></div>
+<div class="fact"><div class="label">Samenvattingslagen</div><b id="countLayers">—</b><small>Alle tussenstappen bewaard</small></div>
+<div class="fact"><div class="label">Foutinjectie</div><b id="countFault">—</b><small>Opzettelijke cijferwijziging</small></div>
+<div class="fact"><div class="label">LLM-aanroepen</div><b id="countCalls">—</b><small>Extractieve baseline, geen AI-generatie</small></div>
+</section>
+<div class="mainGrid">
+<section class="panel" aria-label="Pipeline en claims"><h2>Hiërarchische pipeline</h2><p class="sub">Klik een laag aan en schakel tussen de originele en gemanipuleerde run.</p>
+<div class="flow"><span class="stage">Bron</span><span class="arrow">→</span><span class="stage">Laag 1</span><span class="arrow">→</span><span class="stage">Merge</span><span class="arrow">→</span><span class="stage">Eindsamenvatting</span></div>
+<div class="controls"><div class="segment" role="group" aria-label="Selecteer run">
+<button class="pill" id="buttonOriginal" aria-pressed="false">Origineel</button>
+<button class="pill" id="buttonInjected" aria-pressed="true">Met foutinjectie</button></div>
+<div class="segment" id="layerButtons" role="group" aria-label="Selecteer laag"></div></div>
+<div class="smallText" id="layerDescription"></div>
+<div id="claims" class="skeleton" aria-live="polite">Onderzoeksresultaten laden…</div>
+</section>
+<aside class="panel" aria-label="Evaluatie en bronnen"><h2>Evaluatie per claim</h2><p class="sub">Selecteer links een claim om de oorsprong en numerieke controle te bekijken.</p>
+<div id="evidence" class="selected">Selecteer een claim in een samenvattingslaag.</div>
+<h2 style="margin-top:26px">Metric-overzicht</h2><div id="metrics"></div>
+<div class="warning" style="margin-top:15px"><b>Onderzoeksstatus.</b> Cijfermatching is een eerste detector, geen gevalideerde tegenspraak. Lokale/globale faithfulness, drift en kernpuntdekking zijn nog niet operationeel.</div>
+</aside>
+</div>
+<div class="two">
+<section class="panel"><h2>Wat injecteren we precies?</h2><p class="sub">Een bekende fout in één tussenlaag. De bron verandert niet en latere lagen worden niet opnieuw gegenereerd.</p><div id="injectionDetails" class="skeleton">Laden…</div></section>
+<section class="panel"><h2>Wat is werkelijk uitgevoerd?</h2><p class="smallText">De GitHub Pages-build voert de Python-tests en het demo-experiment uit, en publiceert daarna dit rapport met de <b>echte gegenereerde JSON-data</b>. Geen vast verzonnen scorebord en geen modeldownload bij de bezoeker.</p>
+<p class="smallText">Het extractieve algoritme selecteert bestaande bronclaims: het is <b>geen generatief taalmodel</b>. Het volgende onderzoeksdoel is een lokaal open LLM, gevolgd door validatie van faithfulness en drift.</p>
+<a href="https://github.com/wanderwerkhoven-afk/ClearFinance/tree/research-rebuild/research_v2" target="_blank" rel="noopener">Bekijk de Python-implementatie →</a></section>
+</div>
+</main>
+<footer class="foot">ClearFinance Research · Case B · Synthetische testdata · Geen financiële beoordeling van echte bedrijven</footer>
+<script>
+"use strict";
+const state={data:null,layer:2,mode:"injected",selected:null};
+const el=id=>document.getElementById(id);
+const node=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n;};
+function formatRatio(x){return (x*100).toFixed(1)+"%";}
+function setMode(value){state.mode=value;state.selected=null;paint();}
+function setLayer(value){state.layer=value;state.selected=null;paint();}
+function currentRun(){return state.data[state.mode];}
+function currentEvaluation(){return state.data[state.mode==="injected"?"injected_evaluation":"baseline_evaluation"];}
+function showEvidence(claim){
+  const root=el("evidence");root.replaceChildren();if(!claim){root.textContent="Selecteer een claim.";return;}
+  const layer=currentEvaluation().levels.find(x=>x.level===state.layer);
+  const check=layer.checks.find(x=>x.claim_id===claim.id);
+  const source=new Map(state.data.baseline.source.map(b=>[b.id,b]));
+  root.append(node("strong",null,claim.id),node("p",null,claim.text));
+  const status=check.numeric.status==="review"?"Cijfercontrole: mogelijke afwijking":check.numeric.status==="pass"?"Cijfercontrole: numeriek passend":"Cijfercontrole: niet van toepassing";
+  root.append(node("div",check.numeric.status==="review"?"err":"ok",status));
+  if(check.numeric.unmatched.length)root.append(node("div","smallText","Onbekende numerieke waarden: "+check.numeric.unmatched.map(x=>x.raw).join(", ")));
+  root.append(node("div","smallText","Afkomstig uit vorige laag: "+(claim.origin_ids.join(", ")||"rechtstreeks uit bron")));
+  for(const id of claim.source_ids){
+    const block=source.get(id);if(!block){root.append(node("div","err","Ongeldige bron-ID "+id));continue;}
+    const evidence=node("div","src");evidence.append(node("strong",null,"Bronpagina "+block.page+" · "+block.section+" · "+id),node("p",null,block.text));
+    root.append(evidence);
+  }
+  root.append(node("div","smallText","Semantic faithfulness: nog niet beoordeeld."));
+}
+function paint(){
+  if(!state.data)return;
+  const result=currentRun();const metric=currentEvaluation();
+  const buttons=el("layerButtons");buttons.replaceChildren();
+  for(const layer of result.layers){
+    const btn=node("button","pill","Laag "+layer.level);btn.setAttribute("aria-pressed",layer.level===state.layer);
+    btn.addEventListener("click",()=>setLayer(layer.level));buttons.append(btn);
+  }
+  el("buttonOriginal").setAttribute("aria-pressed",state.mode==="baseline"?"true":"false");
+  el("buttonInjected").setAttribute("aria-pressed",state.mode==="injected"?"true":"false");
+  const layer=result.layers.find(x=>x.level===state.layer)||result.layers[0];
+  const evalLayer=metric.levels.find(x=>x.level===layer.level);
+  el("layerDescription").textContent="Laag "+layer.level+" · "+layer.claims.length+" claims · "+(layer.level===1?"rechtstreeks uit bron":"samengevoegde claims")+" · compressieratio "+formatRatio(evalLayer.compression_ratio_char);
+  const root=el("claims");root.className="";root.replaceChildren();
+  const checks=new Map(evalLayer.checks.map(x=>[x.claim_id,x]));
+  for(const claim of layer.claims){
+    const check=checks.get(claim.id);
+    const row=node("div","claim"+(state.selected===claim.id?" isActive":""));
+    const head=node("div","claimHead");head.append(node("span","id",claim.id));
+    const stat=node("span","status"+(check.numeric.status==="review"?" fail":check.numeric.status==="not_applicable"?" unknown":""),check.numeric.status==="review"?"Cijfer: controleer":check.numeric.status==="pass"?"Cijfer: passend":"Geen cijfers");
+    head.append(stat);row.append(head,node("p",null,claim.text));
+    const select=node("button","mini","Bekijk bron en check");select.addEventListener("click",()=>{state.selected=claim.id;paint();});
+    row.append(select);root.append(row);
+  }
+  const selected=layer.claims.find(x=>x.id===state.selected)||layer.claims[0];
+  if(selected){state.selected=selected.id;showEvidence(selected);}
+  const summary=el("metrics");summary.replaceChildren();
+  const rows=[
+    ["Numerieke reviewclaims",evalLayer.numeric_review_count+" / "+evalLayer.checks.length],
+    ["Compressieratio",formatRatio(evalLayer.compression_ratio_char)],
+    ["Globale faithfulness","Nog niet geïmplementeerd"],
+    ["Lokale faithfulness","Nog niet geïmplementeerd"],
+    ["Drift","Nog niet geïmplementeerd"],
+    ["Gewogen dekking","Nog niet geïmplementeerd"],
+  ];
+  for(const [name,value] of rows){const row=node("div","metricRow");row.append(node("span",null,name),node("b",null,value));summary.append(row);}
+}
+function init(data){
+  if(!data?.baseline?.layers||!data?.injected?.layers||!data?.comparison)throw Error("Resultaatbestand heeft niet de verwachte structuur.");
+  state.data=data;state.layer=data.fault_injection.layer;
+  el("countSources").textContent=data.baseline.source.length;
+  el("countLayers").textContent=data.baseline.layers.length;
+  el("countFault").textContent=data.fault_injection.original.match(/\d+/)?.[0]+" → "+data.fault_injection.mutated.match(/\d+/)?.[0]||"1 wijziging";
+  el("countCalls").textContent=data.baseline.run.llm_calls;
+  const root=el("injectionDetails");root.className="";root.replaceChildren();
+  root.append(node("div","label","Oorspronkelijke claim"),node("p",null,data.fault_injection.original));
+  root.append(node("div","label","Gemuteerde claim"),node("p","err",data.fault_injection.mutated));
+  root.append(node("div","smallText","Laag "+data.fault_injection.layer+" · "+data.fault_injection.claim_id+" · bronpagina "+data.comparison.source_pages.join(", ")));
+  const metrics=node("div","metricRow");metrics.append(node("span",null,"ROUGE-1 / ROUGE-2 / ROUGE-L"),node("b",null,[data.comparison.rouge1,data.comparison.rouge2,data.comparison.rougeL].map(v=>v.toFixed(3)).join(" / ")));root.append(metrics);
+  paint();
+}
+el("buttonOriginal").addEventListener("click",()=>setMode("baseline"));
+el("buttonInjected").addEventListener("click",()=>setMode("injected"));
+fetch("./run.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("HTTP "+r.status);return r.json();}).then(init).catch(err=>{
+  el("claims").className="warning";el("claims").textContent="Het evaluatieresultaat kon niet worden geladen ("+err.message+"). Controleer de publicatie of open de nieuwste GitHub Actions-run.";
+  el("injectionDetails").textContent="Geen resultaten beschikbaar.";
+});
+</script>
+</body></html>
