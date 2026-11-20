@@ -1,52 +1,48 @@
-# ClearFinance — Case B research rebuild
+# ClearFinance — Case B: evaluatie per hiërarchische laag
 
-**Pipeline = testinstrument. Evaluatie per laag = onderzoeksproduct.** Deze branch is een schone onderzoeksbasis. De bestaande GitHub Pages UI en experimentele WebGPU-worker blijven op main behouden maar gelden **niet** als gevalideerde onderzoeksimplementatie.
+**De samenvattingspipeline is het testinstrument; de evaluatiemodule is het product.**
 
-## Offline demo zonder GPU / API-key
+## Werkende één-commando-demo
+
+Vanaf de repository-root:
 
 ```bash
-python -m pip install pytest
-python -m research_v2.cli --input research_v2/fixtures/synthetic_report.json --out research_v2/output
+python -m pip install -r research_v2/requirements.txt
+python -m research_v2.demo
 python -m pytest -q research_v2/tests
 ```
 
-De extractieve baseline produceert reproduceerbaar `layers.json` (bronpassages, laag 1 en alle merge-stappen) en `metrics.json` (provenance, cijferkandidaten, compressie per laag). De baseline **genereert geen vrije AI-tekst**. Dit is bedoeld om fouten in de evaluatie-code vroeg te vangen.
+Open daarna lokaal `research_v2/output/demo/index.html`. De run produceert ook `run.json` met bron, tussenlagen, lineage, evaluaties, foutinjectie en ROUGE-baselines. **Dit is een uitgevoerde extractieve baseline zonder LLM**, niet een AI-samenvatting. Fouten zijn traceerbaar naar de bronpagina.
 
-## Optioneel open model via lokaal Ollama
+## Eigen PDF verwerken
 
-Start lokaal Ollama met `qwen2.5:7b`. Run:
 ```bash
-python -m research_v2.cli --input research_v2/fixtures/synthetic_report.json --merger ollama --model qwen2.5:7b --seed 42 --out research_v2/output-ollama
+python -m research_v2.demo --input pad/naar/jaarverslag.pdf --old 120 --new 125
 ```
 
-Fouten bij modelstart, JSON of bron-ID-validatie worden zichtbaar; er verschijnt geen fictieve AI-output. De adapter accepteert uitsluitend localhost. Seed + temperature=0 zijn gelogd maar garanderen geen identieke uitvoer op alle hardware.
+Dit kan alleen als de tussenlaag daadwerkelijk een claim met het getal `120` bevat. Als dat niet zo is, volgt een expliciete fout in plaats van een kunstmatige succesvolle meting. De parser gebruikt lokaal PyMuPDF en bewaart paginanummers en tekstblokken. Complexe financiële tabellen worden nog **niet betrouwbaar als gestructureerde cellen** geparseerd. OCR ontbreekt.
 
-## Onderzoeksmeting: status
+Alternatief voor alleen tussenlagen zonder foutinjectie:
 
-| Eigenschap | V0 |
-|---|---|
-| Hiërarchische lagen en bron-ID's | Geïmplementeerd |
-| Alle tussenlagen en lineage opslaan | Geïmplementeerd |
-| Exacte numerieke kandidaatcontrole | Eerste implementatie; geen gevalideerde 90% |
-| ROUGE-1/2/L | Deterministische baselines beschikbaar |
-| Foutinjecties | Getal, jaar, kritieke omissie |
-| BERTScore | Volgt |
-| Parser voor echte jaarverslagen en tabellen | Volgt; input is parser-onafhankelijke JSON |
-| Lokale/global faithfulness en drift | Volgt; opgeslagen als not_evaluated |
-| NLI / judge / retrieval recall@k | Volgt; geen verzonnen scores |
-| Gewogen coverage en gevoelige gewichten | Volgt |
-| Menselijke validatie op 150–300 claims | Volgt |
+```bash
+python -m research_v2.cli --input research_v2/fixtures/synthetic_report.json
+```
 
-**Belangrijk:** F1 95%, F2 90%, F4 ‘critical fail’ zijn concept-acceptatiecriteria en geen gemeten resultaten. Getal-match alleen is niet hetzelfde als cijfer-, jaar- en eenheidscorrectheid in tabellen. De 5 goede/5 slechte voorbeelden hebben beperkte statistische kracht. Gebruik publieke/synthetische bronnen en documenteer licenties.
+## Optionele lokale generatieve LLM-test
 
-## Volgende technische stappen
+```bash
+ollama pull qwen2.5:7b
+python -m research_v2.demo --mode ollama --model qwen2.5:7b
+```
 
-1. PDF + tabellen → expliciete `{id,page,section,text,kind}`-bronblokken; audit van jaar/eenheid in een tabelrij.
-2. EDA over echte publieke bankjaarverslagen.
-3. Golden injectieset en ROUGE/BERTScore-baselines plus false-failure-test.
-4. Claimretrieval benchmark Recall@3 op circa 50 gelabelde claims.
-5. Lokaal/global NLI- of judge-label `supported/contradicted/not_found`, drift, menselijke annotatie en κ.
-6. Gewogen kernpuntdekking met stakeholder-gewichtenschema en sensitiviteitsanalyse.
-7. Pas daarna minimale evaluatiedemo: fouten per claim met bronpagina.
+Het model draait uitsluitend op localhost; geen externe AI-API. Dit vereist een geïnstalleerde Ollama-server en voldoende RAM. Let op: met vrije tekst is het **niet gegarandeerd** dat een samenvattingslaag het injecteerbare getal behoudt. Voor de vergelijkbare foutinjectietest gebruiken we daarom eerst de extractieve baseline.
 
-**GitLab:** Tech Methods vraagt een GitLab-repolink. Deze branch is vooralsnog op GitHub. Zorg voor de juiste repository of spiegel en vermeld de werkelijke bron.
+## Huidige metingen
+
+- Per laag zijn claims, source IDs, origin IDs en compressieratio opgeslagen.
+- Cijfercheck signaleert **kandidaat-afwijkingen**, geen gevalideerde tegenspraak.
+- De demo maakt een bekende numerieke fout in één tussenlaag en vergelijkt de getalcontrole met ROUGE.
+- NLI-claims, local/global semantic faithfulness, drift, gewogen kernpuntdekking en BERTScore zijn **nog niet geïmplementeerd**.
+- Hierarchical merging is in deze baseline selecteren van bronclaims, geen LLM-synthese. De daadwerkelijke NLP-pipeline moet later met een lokaal model worden gevalideerd.
+
+De oude website op `main` blijft intact. Deze code staat op de branch `research-rebuild`. De formele Tech Methods-repository hoort volgens de projectvoorwaarden op GitLab; deze GitHub-branch moet daarvoor gespiegeld of gemigreerd worden.
